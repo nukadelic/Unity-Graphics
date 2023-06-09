@@ -127,6 +127,12 @@ namespace UnityEngine.Rendering.Universal
             /// </summary>
             [Reload("Shaders/ObjectMotionVectors.shader")]
             public Shader objectMotionVector;
+
+            /// <summary>
+            /// Oculus Camera Motion Vectors shader.
+            /// </summary>
+            [Reload("Shaders/OculusCameraMotionVectors.shader")]
+            public Shader oculusCameraMotionVector;
         }
 
         /// <summary>

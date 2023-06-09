@@ -350,34 +350,40 @@ namespace UnityEngine.Experimental.Rendering
             // XRTODO : remove this line and use XRSettings.useOcclusionMesh instead when it's fixed
             Mesh occlusionMesh = XRGraphicsAutomatedTests.running ? null : renderParameter.occlusionMesh;
 
-            return new XRView(renderParameter.projection, renderParameter.view, viewport, occlusionMesh, renderParameter.textureArraySlice);
+            bool prevViewValid = renderParameter.isPreviousViewValid;
+            Matrix4x4 prevViewMatrix = (prevViewValid) ? renderParameter.previousView : Matrix4x4.identity;
+            return new XRView(renderParameter.projection, renderParameter.view, viewport, occlusionMesh, renderParameter.textureArraySlice, prevViewValid, prevViewMatrix);
+        }
+
+        static RenderTextureDescriptor CopyXRRenderTextureDescriptor(in RenderTextureDescriptor xrDesc)
+        {
+            // We can't use descriptor directly because y-flip is forced
+            // XRTODO : fix root problem
+            RenderTextureDescriptor rtDesc = new RenderTextureDescriptor(xrDesc.width, xrDesc.height, xrDesc.colorFormat, xrDesc.depthBufferBits, xrDesc.mipCount);
+            rtDesc.dimension    = xrDesc.dimension;
+            rtDesc.volumeDepth  = xrDesc.volumeDepth;
+            rtDesc.vrUsage      = xrDesc.vrUsage;
+            rtDesc.sRGB         = xrDesc.sRGB;
+            return rtDesc;
         }
 
         static XRPassCreateInfo BuildPass(XRDisplaySubsystem.XRRenderPass xrRenderPass, ScriptableCullingParameters cullingParameters)
         {
-            // We can't use descriptor directly because y-flip is forced
-            // XRTODO : fix root problem
-            RenderTextureDescriptor xrDesc = xrRenderPass.renderTargetDesc;
-            RenderTextureDescriptor rtDesc = new RenderTextureDescriptor(xrDesc.width, xrDesc.height, xrDesc.colorFormat, xrDesc.depthBufferBits, xrDesc.mipCount);
-            rtDesc.dimension    = xrRenderPass.renderTargetDesc.dimension;
-            rtDesc.volumeDepth  = xrRenderPass.renderTargetDesc.volumeDepth;
-            rtDesc.vrUsage      = xrRenderPass.renderTargetDesc.vrUsage;
-            rtDesc.sRGB         = xrRenderPass.renderTargetDesc.sRGB;
-
-            XRPassCreateInfo passInfo = new XRPassCreateInfo
+            return new XRPassCreateInfo
             {
-                renderTarget            = xrRenderPass.renderTarget,
-                renderTargetDesc        = rtDesc,
-                cullingParameters       = cullingParameters,
-                occlusionMeshMaterial   = s_OcclusionMeshMaterial,
-                foveatedRenderingInfo   = xrRenderPass.foveatedRenderingInfo,
-                multipassId             = s_Layout.GetActivePasses().Count,
-                cullingPassId           = xrRenderPass.cullingPassIndex,
-                copyDepth               = xrRenderPass.shouldFillOutDepth,
-                xrSdkRenderPass         = xrRenderPass
+                renderTarget                  = xrRenderPass.renderTarget,
+                renderTargetDesc              = CopyXRRenderTextureDescriptor(xrRenderPass.renderTargetDesc),
+                cullingParameters             = cullingParameters,
+                occlusionMeshMaterial         = s_OcclusionMeshMaterial,
+                foveatedRenderingInfo         = xrRenderPass.foveatedRenderingInfo,
+                motionVectorRenderTargetValid = xrRenderPass.hasMotionVectorPass,
+                motionVectorRenderTarget      = xrRenderPass.motionVectorRenderTarget,
+                motionVectorRenderTargetDesc  = CopyXRRenderTextureDescriptor(xrRenderPass.motionVectorRenderTargetDesc),
+                multipassId                   = s_Layout.GetActivePasses().Count,
+                cullingPassId                 = xrRenderPass.cullingPassIndex,
+                copyDepth                     = xrRenderPass.shouldFillOutDepth,
+                xrSdkRenderPass               = xrRenderPass
             };
-
-            return passInfo;
         }
 
 #endif
