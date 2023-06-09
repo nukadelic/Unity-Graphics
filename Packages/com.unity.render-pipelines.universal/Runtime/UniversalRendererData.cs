@@ -133,6 +133,12 @@ namespace UnityEngine.Rendering.Universal
             /// </summary>
             [Reload("Shaders/PostProcessing/LensFlareDataDriven.shader")]
             public Shader dataDrivenLensFlare;
+
+            /// <summary>
+            /// Oculus Camera Motion Vectors shader.
+            /// </summary>
+            [Reload("Shaders/OculusCameraMotionVectors.shader")]
+            public Shader oculusCameraMotionVector;
         }
 
         /// <summary>
