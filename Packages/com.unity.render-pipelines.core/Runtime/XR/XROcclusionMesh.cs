@@ -47,7 +47,13 @@ namespace UnityEngine.Experimental.Rendering
                 {
                     if (m_Pass.singlePassEnabled)
                     {
-                        if (m_CombinedMesh != null && SystemInfo.supportsRenderTargetArrayIndexFromVertexShader)
+                        if (m_CombinedMesh != null && SystemInfo.supportsMultiview)
+                        {
+                            cmd.EnableShaderKeyword("XR_OCCLUSION_MESH_COMBINED");
+                            cmd.DrawMesh(m_CombinedMesh, Matrix4x4.identity, m_Material);
+                            cmd.DisableShaderKeyword("XR_OCCLUSION_MESH_COMBINED");
+                        }
+                        else if (m_CombinedMesh != null && SystemInfo.supportsRenderTargetArrayIndexFromVertexShader)
                         {
                             m_Pass.StopSinglePass(cmd);
 

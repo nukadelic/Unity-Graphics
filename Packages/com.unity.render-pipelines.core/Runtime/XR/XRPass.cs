@@ -11,6 +11,9 @@ namespace UnityEngine.Experimental.Rendering
     {
         internal RenderTargetIdentifier renderTarget;
         internal RenderTextureDescriptor renderTargetDesc;
+        internal bool motionVectorRenderTargetValid;
+        internal RenderTargetIdentifier motionVectorRenderTarget;
+        internal RenderTextureDescriptor motionVectorRenderTargetDesc;
         internal ScriptableCullingParameters cullingParameters;
         internal Material occlusionMeshMaterial;
         internal IntPtr foveatedRenderingInfo;
@@ -114,6 +117,21 @@ namespace UnityEngine.Experimental.Rendering
         public RenderTextureDescriptor renderTargetDesc { get; private set; }
 
         /// <summary>
+        //  Destination render target for motion vectors
+        /// <summary>
+        public RenderTargetIdentifier motionVectorRenderTarget { get; private set; }
+
+        /// <summary>
+        //  Check if render target is valid
+        /// <summary>
+        public bool motionVectorRenderTargetValid { get; private set; }
+
+        /// <summary>
+        /// Destination render target descriptor
+        /// </summary>
+        public RenderTextureDescriptor motionVectorRenderTargetDesc { get; private set; }
+
+        /// <summary>
         /// Parameters used for culling.
         /// </summary>
         public ScriptableCullingParameters cullingParams { get; private set; }
@@ -183,6 +201,26 @@ namespace UnityEngine.Experimental.Rendering
         public Matrix4x4 GetViewMatrix(int viewIndex = 0)
         {
             return m_Views[viewIndex].viewMatrix;
+        }
+
+        /// <summary>
+        /// Returns true is the previous view of a given view is valid.
+        /// </summary>
+        /// <param name="viewIndex"></param>
+        /// <returns></returns>
+        public bool GetPrevViewValid(int viewIndex = 0)
+        {
+            return m_Views[viewIndex].prevViewValid;
+        }
+
+        /// <summary>
+        /// Returns the previous view matrix for a given view.
+        /// </summary>
+        /// <param name="viewIndex"></param>
+        /// <returns></returns>
+        public Matrix4x4 GetPrevViewMatrix(int viewIndex = 0)
+        {
+            return m_Views[viewIndex].prevViewMatrix;
         }
 
         /// <summary>
@@ -342,6 +380,9 @@ namespace UnityEngine.Experimental.Rendering
             multipassId = createInfo.multipassId;
             AssignCullingParams(createInfo.cullingPassId, createInfo.cullingParameters);
             renderTarget = new RenderTargetIdentifier(createInfo.renderTarget, 0, CubemapFace.Unknown, -1);
+            motionVectorRenderTargetValid = createInfo.motionVectorRenderTargetValid;
+            motionVectorRenderTargetDesc = createInfo.motionVectorRenderTargetDesc;
+            motionVectorRenderTarget = new RenderTargetIdentifier(createInfo.motionVectorRenderTarget, 0, CubemapFace.Unknown, -1);
             renderTargetDesc = createInfo.renderTargetDesc;
             m_OcclusionMesh.SetMaterial(createInfo.occlusionMeshMaterial);
             foveatedRenderingInfo = createInfo.foveatedRenderingInfo;
