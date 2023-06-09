@@ -113,6 +113,7 @@ namespace UnityEngine.Rendering.Universal
 #if ENABLE_VR && ENABLE_XR_MODULE
         XROcclusionMeshPass m_XROcclusionMeshPass;
         CopyDepthPass m_XRCopyDepthPass;
+        OculusMotionVectorPass m_OculusMotionVecPass;
 #endif
 #if UNITY_EDITOR
         CopyDepthPass m_FinalDepthCopyPass;
@@ -133,6 +134,7 @@ namespace UnityEngine.Rendering.Universal
         RTHandle m_OpaqueColor;
         RTHandle m_MotionVectorColor;
         RTHandle m_MotionVectorDepth;
+        RTHandle m_XRMotionVectorTargetHandleAlias;
 
         ForwardLights m_ForwardLights;
         DeferredLights m_DeferredLights;
@@ -153,6 +155,7 @@ namespace UnityEngine.Rendering.Universal
         Material m_StencilDeferredMaterial = null;
         Material m_CameraMotionVecMaterial = null;
         Material m_ObjectMotionVecMaterial = null;
+        Material m_OculusCameraMotionVecMaterial = null;
 
         PostProcessPasses m_PostProcessPasses;
         internal ColorGradingLutPass colorGradingLutPass { get => m_PostProcessPasses.colorGradingLutPass; }
@@ -180,6 +183,7 @@ namespace UnityEngine.Rendering.Universal
             m_StencilDeferredMaterial = CoreUtils.CreateEngineMaterial(data.shaders.stencilDeferredPS);
             m_CameraMotionVecMaterial = CoreUtils.CreateEngineMaterial(data.shaders.cameraMotionVector);
             m_ObjectMotionVecMaterial = CoreUtils.CreateEngineMaterial(data.shaders.objectMotionVector);
+            m_OculusCameraMotionVecMaterial = CoreUtils.CreateEngineMaterial(data.shaders.oculusCameraMotionVector);
 
             StencilStateData stencilData = data.defaultStencilState;
             m_DefaultStencilState = StencilState.defaultValue;
@@ -279,6 +283,7 @@ namespace UnityEngine.Rendering.Universal
                 m_RenderOpaqueForwardOnlyPass = new DrawObjectsPass("Render Opaques Forward Only", forwardOnlyShaderTagIds, true, RenderPassEvent.BeforeRenderingOpaques, RenderQueueRange.opaque, data.opaqueLayerMask, forwardOnlyStencilState, forwardOnlyStencilRef);
             }
 
+            m_OculusMotionVecPass = new OculusMotionVectorPass(URPProfileId.DrawMVOpaqueObjects, true, RenderPassEvent.BeforeRenderingPostProcessing, RenderQueueRange.opaque, data.opaqueLayerMask, m_DefaultStencilState, stencilData.stencilReference, m_OculusCameraMotionVecMaterial);
             // Always create this pass even in deferred because we use it for wireframe rendering in the Editor or offscreen depth texture rendering.
             m_RenderOpaqueForwardPass = new DrawObjectsPass(URPProfileId.DrawOpaqueObjects, true, RenderPassEvent.BeforeRenderingOpaques, RenderQueueRange.opaque, data.opaqueLayerMask, m_DefaultStencilState, stencilData.stencilReference);
             m_RenderOpaqueForwardWithRenderingLayersPass = new DrawObjectsWithRenderingLayersPass(URPProfileId.DrawOpaqueObjects, true, RenderPassEvent.BeforeRenderingOpaques, RenderQueueRange.opaque, data.opaqueLayerMask, m_DefaultStencilState, stencilData.stencilReference);
@@ -395,6 +400,7 @@ namespace UnityEngine.Rendering.Universal
             m_OpaqueColor?.Release();
             m_MotionVectorColor?.Release();
             m_MotionVectorDepth?.Release();
+            m_XRMotionVectorTargetHandleAlias?.Release();
             hasReleasedRTs = true;
         }
 
@@ -517,7 +523,7 @@ namespace UnityEngine.Rendering.Universal
             if (DebugHandler != null)
             {
                 DebugHandler.Setup(context, ref renderingData);
-                
+
                 if (DebugHandler.IsActiveForCamera(ref cameraData))
                 {
                     if (DebugHandler.WriteToDebugScreenTexture(ref cameraData))
@@ -1024,8 +1030,36 @@ namespace UnityEngine.Rendering.Universal
 
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.hasValidOcclusionMesh)
+            {
+                if (SystemInfo.usesLoadStoreActions)
+                    m_XROcclusionMeshPass.ConfigureClear(ClearFlag.All, Color.black);
+
+                m_XROcclusionMeshPass.ConfigureDepthStoreAction(RenderBufferStoreAction.DontCare);
                 EnqueuePass(m_XROcclusionMeshPass);
+            }
 #endif
+
+            if (cameraData.xr.motionVectorRenderTargetValid)
+            {
+                RenderTargetIdentifier motionVecId = cameraData.xr.motionVectorRenderTarget;
+
+                if (m_XRMotionVectorTargetHandleAlias == null || m_XRMotionVectorTargetHandleAlias.nameID != motionVecId)
+                {
+                    m_XRMotionVectorTargetHandleAlias?.Release();
+                    m_XRMotionVectorTargetHandleAlias = RTHandles.Alloc(motionVecId);
+                }
+
+                // ID is the same since a RenderTexture encapsulates all the attachments, including both color+depth.
+                RTHandle mvColor = m_XRMotionVectorTargetHandleAlias;
+                RTHandle mvDepth = m_XRMotionVectorTargetHandleAlias;
+
+                // Subsample Depth if the motion vector render target is smaller than the color render target
+                bool subsampleDepth = cameraData.xr.motionVectorRenderTargetDesc.width <
+                                      cameraData.xr.renderTargetDesc.width;
+
+                m_OculusMotionVecPass.Setup(mvColor, mvDepth, m_ActiveCameraDepthAttachment, subsampleDepth);
+                EnqueuePass(m_OculusMotionVecPass);
+            }
 
             bool lastCameraInTheStack = cameraData.resolveFinalTarget;
 
