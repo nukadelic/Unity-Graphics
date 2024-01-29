@@ -903,6 +903,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
         {
             var result = new PassDescriptor()
             {
+                
                 // Definition
                 displayName = "DepthOnly",
                 referenceName = "SHADERPASS_DEPTHONLY",
@@ -1082,9 +1083,11 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 fieldDependencies = CoreFieldDependencies.Default,
 
                 // Conditional State
+                defines = new DefineCollection(),
                 renderStates = CoreRenderStates.Default,
                 pragmas = CorePragmas.InstancedSM45,
                 includes = CoreIncludes.MotionVectors,
+                keywords = new KeywordCollection(),
             };
 
             AddAlphaClipControlToPass(ref result, target);
