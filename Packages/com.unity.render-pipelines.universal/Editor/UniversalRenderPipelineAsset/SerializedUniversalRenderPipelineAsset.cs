@@ -44,6 +44,7 @@ namespace UnityEditor.Rendering.Universal
 
         public SerializedProperty reflectionProbeBlendingProp { get; }
         public SerializedProperty reflectionProbeBoxProjectionProp { get; }
+        public SerializedProperty reflectionProbeAtlasProp { get; }
 
         public SerializedProperty shadowDistanceProp { get; }
         public SerializedProperty shadowCascadeCountProp { get; }
@@ -120,6 +121,7 @@ namespace UnityEditor.Rendering.Universal
 
             reflectionProbeBlendingProp = serializedObject.FindProperty("m_ReflectionProbeBlending");
             reflectionProbeBoxProjectionProp = serializedObject.FindProperty("m_ReflectionProbeBoxProjection");
+            reflectionProbeAtlasProp = serializedObject.FindProperty("m_ReflectionProbeAtlas");
 
             shadowDistanceProp = serializedObject.FindProperty("m_ShadowDistance");
 

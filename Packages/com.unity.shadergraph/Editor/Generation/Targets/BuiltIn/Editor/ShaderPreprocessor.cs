@@ -29,6 +29,7 @@ namespace UnityEditor.Rendering.BuiltIn
         ScreenSpaceShadows = (1 << 12),
         ReflectionProbeBlending = (1 << 13),
         ReflectionProbeBoxProjection = (1 << 14),
+        ReflectionProbeAtlas = (1 << 15),
     }
 
     // This should really be part of the main BuiltIn Target Keyword list we use for reference names
@@ -42,6 +43,7 @@ namespace UnityEditor.Rendering.BuiltIn
         public static readonly string AdditionalLightShadows = "_ADDITIONAL_LIGHT_SHADOWS";
         public static readonly string ReflectionProbeBlending = "_REFLECTION_PROBE_BLENDING";
         public static readonly string ReflectionProbeBoxProjection = "_REFLECTION_PROBE_BOX_PROJECTION";
+        public static readonly string ReflectionProbeAtlas = "_REFLECTION_PROBE_ATLAS";
         // This is used during shadow map generation to differentiate between directional and punctual light shadows,
         // as they use different formulas to apply Normal Bias
         public static readonly string SoftShadows = "_SHADOWS_SOFT";
@@ -75,6 +77,7 @@ namespace UnityEditor.Rendering.BuiltIn
         ShaderKeyword m_AdditionalLightsPixel = new ShaderKeyword(ShaderKeywordStrings.AdditionalLightsPixel);
         ShaderKeyword m_AdditionalLightShadows = new ShaderKeyword(ShaderKeywordStrings.AdditionalLightShadows);
         ShaderKeyword m_ReflectionProbeBlending = new ShaderKeyword(ShaderKeywordStrings.ReflectionProbeBlending);
+        ShaderKeyword m_ReflectionProbeAtlas = new ShaderKeyword(ShaderKeywordStrings.ReflectionProbeAtlas);
         ShaderKeyword m_ReflectionProbeBoxProjection = new ShaderKeyword(ShaderKeywordStrings.ReflectionProbeBoxProjection);
         ShaderKeyword m_CastingPunctualLightShadow = new ShaderKeyword(ShaderKeywordStrings.CastingPunctualLightShadow);
         ShaderKeyword m_SoftShadows = new ShaderKeyword(ShaderKeywordStrings.SoftShadows);
@@ -186,6 +189,10 @@ namespace UnityEditor.Rendering.BuiltIn
 
             bool isReflectionProbeBoxProjection = compilerData.shaderKeywordSet.IsEnabled(m_ReflectionProbeBoxProjection);
             if (!IsFeatureEnabled(features, ShaderFeatures.ReflectionProbeBoxProjection) && isReflectionProbeBoxProjection)
+                return true;
+
+            bool isReflectionProbeAtlas = compilerData.shaderKeywordSet.IsEnabled(m_ReflectionProbeAtlas);
+            if (!IsFeatureEnabled(features, ShaderFeatures.ReflectionProbeAtlas) && isReflectionProbeAtlas)
                 return true;
 
             bool isPunctualLightShadowCasterPass = (snippetData.passType == PassType.ShadowCaster) && compilerData.shaderKeywordSet.IsEnabled(m_CastingPunctualLightShadow);

@@ -486,6 +486,10 @@ namespace UnityEngine.Rendering.Universal
         [ShaderKeywordFilter.SelectOrRemove(true, keywordNames: ShaderKeywordStrings.ReflectionProbeBoxProjection)]
 #endif
         [SerializeField] bool m_ReflectionProbeBoxProjection = false;
+#if UNITY_EDITOR // multi_compile_fragment _ _REFLECTION_PROBE_ATLAS
+        [ShaderKeywordFilter.SelectOrRemove(true, keywordNames: ShaderKeywordStrings.ReflectionProbeAtlas)]
+#endif
+        [SerializeField] bool m_ReflectionProbeAtlas = false;
 
         // Shadows Settings
         [SerializeField] float m_ShadowDistance = 50.0f;
@@ -1262,6 +1266,15 @@ namespace UnityEngine.Rendering.Universal
         {
             get { return m_ReflectionProbeBoxProjection; }
             internal set { m_ReflectionProbeBoxProjection = value; }
+        }
+
+        // <summary>
+        /// Specifies if this <c>UniversalRenderPipelineAsset</c> should use the reflection probe atlas for Forward Plus.
+        /// </summary>
+        public bool reflectionProbeAtlas
+        {
+            get => m_ReflectionProbeAtlas;
+            internal set => m_ReflectionProbeAtlas = value;
         }
 
         /// <summary>

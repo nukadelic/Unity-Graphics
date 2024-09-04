@@ -183,6 +183,11 @@ namespace UnityEngine.Rendering.Universal
         public bool reflectionProbeBlending;
 
         /// <summary>
+        /// True if reflection probes are combined into a single atlas texture.
+        /// </summary>
+        public bool reflectionProbeAtlas;
+
+        /// <summary>
         /// True if light layers are enabled.
         /// </summary>
         public bool supportsLightLayers;
@@ -1078,6 +1083,9 @@ namespace UnityEngine.Rendering.Universal
 
         /// <summary> Keyword used for Reflection probe blending. </summary>
         public const string ReflectionProbeBlending = "_REFLECTION_PROBE_BLENDING";
+
+        /// <summary> Keyword used for Reflection probe atlas. </summary>
+        public const string ReflectionProbeAtlas = "_REFLECTION_PROBE_ATLAS";
 
         /// <summary> Keyword used for soft shadows. </summary>
         public const string SoftShadows = "_SHADOWS_SOFT";

@@ -172,11 +172,54 @@ half CalculateProbeVolumeSqrMagnitude(float4 probeBoxMin, float4 probeBoxMax)
     return dot(maxToMin, maxToMin);
 }
 
+half3 CalculateIrradianceFromReflectionProbe(half3 reflectVector, float3 positionWS, half perceptualRoughness, float2 normalizedScreenSpaceUV)
+{
+    half3 irradiance = half3(0.0h, 0.0h, 0.0h);
+    half mip = PerceptualRoughnessToMipmapLevel(perceptualRoughness);
+#if USE_FORWARD_PLUS && defined(_REFLECTION_PROBE_ATLAS)
+    uint probeIndex;
+    ClusterIterator it = ClusterInit(normalizedScreenSpaceUV, positionWS, 1);
+    [branch] if (ClusterNext(it, probeIndex))
+    {
+        probeIndex -= URP_FP_PROBES_BEGIN;
+
+        half3 sampleVector = reflectVector;
+#ifdef _REFLECTION_PROBE_BOX_PROJECTION
+        sampleVector = BoxProjectedCubemapDirection(reflectVector, positionWS, urp_ReflProbes_ProbePosition[probeIndex], urp_ReflProbes_BoxMin[probeIndex], urp_ReflProbes_BoxMax[probeIndex]);
+#endif // _REFLECTION_PROBE_BOX_PROJECTION
+
+        uint maxMip = (uint)abs(urp_ReflProbes_ProbePosition[probeIndex].w) - 1;
+        half probeMip = min(mip, maxMip);
+        float2 uv = saturate(PackNormalOctQuadEncode(sampleVector) * 0.5 + 0.5);
+
+        float mip0 = floor(probeMip);
+        float mip1 = mip0 + 1;
+        float mipBlend = probeMip - mip0;
+        float4 scaleOffset0 = urp_ReflProbes_MipScaleOffset[probeIndex * 7 + (uint)mip0];
+        float4 scaleOffset1 = urp_ReflProbes_MipScaleOffset[probeIndex * 7 + (uint)mip1];
+
+        half3 irradiance0 = half4(SAMPLE_TEXTURE2D_LOD(urp_ReflProbes_Atlas, sampler_LinearClamp, uv * scaleOffset0.xy + scaleOffset0.zw, 0.0)).rgb;
+        half3 irradiance1 = half4(SAMPLE_TEXTURE2D_LOD(urp_ReflProbes_Atlas, sampler_LinearClamp, uv * scaleOffset1.xy + scaleOffset1.zw, 0.0)).rgb;
+        irradiance = lerp(irradiance0, irradiance1, mipBlend);
+    }
+#else
+#ifdef _REFLECTION_PROBE_BOX_PROJECTION
+    reflectVector = BoxProjectedCubemapDirection(reflectVector, positionWS, unity_SpecCube0_ProbePosition, unity_SpecCube0_BoxMin, unity_SpecCube0_BoxMax);
+#endif // _REFLECTION_PROBE_BOX_PROJECTION
+
+    half4 encodedIrradiance = half4(SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0, samplerunity_SpecCube0, reflectVector, mip));
+
+    irradiance = DecodeHDREnvironment(encodedIrradiance, unity_SpecCube0_HDR);
+#endif
+
+    return irradiance;
+}
+
 half3 CalculateIrradianceFromReflectionProbes(half3 reflectVector, float3 positionWS, half perceptualRoughness, float2 normalizedScreenSpaceUV)
 {
     half3 irradiance = half3(0.0h, 0.0h, 0.0h);
     half mip = PerceptualRoughnessToMipmapLevel(perceptualRoughness);
-#if USE_FORWARD_PLUS
+#if USE_FORWARD_PLUS && defined(_REFLECTION_PROBE_ATLAS)
     float totalWeight = 0.0f;
     uint probeIndex;
     ClusterIterator it = ClusterInit(normalizedScreenSpaceUV, positionWS, 1);
@@ -279,24 +322,18 @@ half3 CalculateIrradianceFromReflectionProbes(half3 reflectVector, float3 positi
 
 half3 GlossyEnvironmentReflection(half3 reflectVector, float3 positionWS, half perceptualRoughness, half occlusion, float2 normalizedScreenSpaceUV)
 {
-#if !defined(_ENVIRONMENTREFLECTIONS_OFF)
     half3 irradiance;
 
-#if defined(_REFLECTION_PROBE_BLENDING) || USE_FORWARD_PLUS
+#if !defined(_ENVIRONMENTREFLECTIONS_OFF)
+#if defined(_REFLECTION_PROBE_BLENDING)
     irradiance = CalculateIrradianceFromReflectionProbes(reflectVector, positionWS, perceptualRoughness, normalizedScreenSpaceUV);
 #else
-#ifdef _REFLECTION_PROBE_BOX_PROJECTION
-    reflectVector = BoxProjectedCubemapDirection(reflectVector, positionWS, unity_SpecCube0_ProbePosition, unity_SpecCube0_BoxMin, unity_SpecCube0_BoxMax);
-#endif // _REFLECTION_PROBE_BOX_PROJECTION
-    half mip = PerceptualRoughnessToMipmapLevel(perceptualRoughness);
-    half4 encodedIrradiance = half4(SAMPLE_TEXTURECUBE_LOD(unity_SpecCube0, samplerunity_SpecCube0, reflectVector, mip));
-
-    irradiance = DecodeHDREnvironment(encodedIrradiance, unity_SpecCube0_HDR);
+    irradiance = CalculateIrradianceFromReflectionProbe(reflectVector, positionWS, perceptualRoughness, normalizedScreenSpaceUV);
 #endif // _REFLECTION_PROBE_BLENDING
+#else // _ENVIRONMENTREFLECTIONS_OFF
+    irradiance = _GlossyEnvironmentColor.rgb;
+#endif // !_ENVIRONMENTREFLECTIONS_OFF
     return irradiance * occlusion;
-#else
-    return _GlossyEnvironmentColor.rgb * occlusion;
-#endif // _ENVIRONMENTREFLECTIONS_OFF
 }
 
 #if !USE_FORWARD_PLUS

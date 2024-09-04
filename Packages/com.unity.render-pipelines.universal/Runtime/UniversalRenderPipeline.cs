@@ -1381,7 +1381,7 @@ namespace UnityEngine.Rendering.Universal
             InitializePostProcessingData(settings, cameraData.stackLastCameraOutputToHDR, out renderingData.postProcessingData);
             renderingData.supportsDynamicBatching = settings.supportsDynamicBatching;
 
-            renderingData.perObjectData = GetPerObjectLightFlags(renderingData.lightData.additionalLightsCount, isForwardPlus);
+            renderingData.perObjectData = GetPerObjectLightFlags(renderingData.lightData.additionalLightsCount, isForwardPlus, settings);
             renderingData.postProcessingEnabled = cameraData.stackAnyPostProcessingEnabled;
             renderingData.commandBuffer = cmd;
 
@@ -1515,6 +1515,7 @@ namespace UnityEngine.Rendering.Universal
             lightData.supportsMixedLighting = settings.supportsMixedLighting;
             lightData.reflectionProbeBlending = settings.reflectionProbeBlending;
             lightData.reflectionProbeBoxProjection = settings.reflectionProbeBoxProjection;
+            lightData.reflectionProbeAtlas = settings.reflectionProbeAtlas;
             lightData.supportsLightLayers = RenderingUtils.SupportsLightLayers(SystemInfo.graphicsDeviceType) && settings.useRenderingLayers;
         }
 
@@ -1595,7 +1596,7 @@ namespace UnityEngine.Rendering.Universal
 #endif
         }
 
-        static PerObjectData GetPerObjectLightFlags(int additionalLightsCount, bool isForwardPlus)
+        static PerObjectData GetPerObjectLightFlags(int additionalLightsCount, bool isForwardPlus, UniversalRenderPipelineAsset settings)
         {
             using var profScope = new ProfilingScope(null, Profiling.Pipeline.getPerObjectLightFlags);
 
@@ -1604,6 +1605,10 @@ namespace UnityEngine.Rendering.Universal
             if (!isForwardPlus)
             {
                 configuration |= PerObjectData.ReflectionProbes | PerObjectData.LightData;
+            }
+            else if (!settings.reflectionProbeBlending || !settings.reflectionProbeAtlas)
+            {
+                configuration |= PerObjectData.ReflectionProbes;
             }
 
             if (additionalLightsCount > 0 && !isForwardPlus)

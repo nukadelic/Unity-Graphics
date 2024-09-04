@@ -369,7 +369,10 @@ namespace UnityEngine.Rendering.Universal.Internal
             {
                 if (m_UseForwardPlus)
                 {
-                    m_ReflectionProbeManager.UpdateGpuData(cmd, ref renderingData);
+                    if (renderingData.lightData.reflectionProbeAtlas)
+                    {
+                        m_ReflectionProbeManager.UpdateGpuData(cmd, ref renderingData);
+                    }
 
                     using (new ProfilingScope(null, m_ProfilingSamplerFPComplete))
                     {
@@ -408,6 +411,7 @@ namespace UnityEngine.Rendering.Universal.Internal
 
                 CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.ReflectionProbeBlending, renderingData.lightData.reflectionProbeBlending);
                 CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.ReflectionProbeBoxProjection, renderingData.lightData.reflectionProbeBoxProjection);
+                CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.ReflectionProbeAtlas, renderingData.lightData.reflectionProbeAtlas);
 
                 var asset = UniversalRenderPipeline.asset;
 
