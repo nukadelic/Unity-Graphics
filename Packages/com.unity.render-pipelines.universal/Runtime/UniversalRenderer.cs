@@ -47,6 +47,9 @@ namespace UnityEngine.Rendering.Universal
 
         const int k_FinalBlitPassQueueOffset = 1;
         const int k_AfterFinalBlitPassQueueOffset = k_FinalBlitPassQueueOffset + 1;
+        #if ENABLE_VR && ENABLE_XR_MODULE
+        const int k_AfterXRCopyDepthQueueOffset = k_AfterFinalBlitPassQueueOffset + 1;
+        #endif
 
         static readonly List<ShaderTagId> k_DepthNormalsOnly = new List<ShaderTagId> { new ShaderTagId("DepthNormalsOnly") };
 
@@ -190,7 +193,7 @@ namespace UnityEngine.Rendering.Universal
             if (GraphicsSettings.TryGetRenderPipelineSettings<UniversalRenderPipelineRuntimeXRResources>(out var xrResources))
             {
                 Experimental.Rendering.XRSystem.Initialize(XRPassUniversal.Create, xrResources.xrOcclusionMeshPS, xrResources.xrMirrorViewPS);
-                m_XRDepthMotionPass = new XRDepthMotionPass(RenderPassEvent.BeforeRenderingPrePasses, xrResources.xrMotionVector);
+                m_XRDepthMotionPass = new XRDepthMotionPass(RenderPassEvent.AfterRendering + k_AfterXRCopyDepthQueueOffset, xrResources.xrMotionVector);
             }
 #endif
             if (GraphicsSettings.TryGetRenderPipelineSettings<UniversalRenderPipelineRuntimeShaders>(

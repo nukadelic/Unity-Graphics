@@ -11,6 +11,8 @@ namespace UnityEngine.Rendering.Universal
     public class XRDepthMotionPass : ScriptableRenderPass
     {
         private static readonly ShaderTagId k_MotionOnlyShaderTagId = new ShaderTagId("XRMotionVectors");
+        private static readonly int k_XRDepthTextureNameID = Shader.PropertyToID("_XRDepthTexture");
+        private static LocalKeyword m_SubsampleDepthKeyword;
         private PassData m_PassData;
         private RTHandle m_XRMotionVectorColor;
         private TextureHandle xrMotionVectorColor;
@@ -34,6 +36,7 @@ namespace UnityEngine.Rendering.Universal
             m_XRMotionVectorColor = null;
             xrMotionVectorDepth = TextureHandle.nullHandle;
             m_XRMotionVectorDepth = null;
+            m_SubsampleDepthKeyword = new LocalKeyword(xrMotionVector, "_SUBSAMPLE_DEPTH");
         }
 
         private class PassData
@@ -42,6 +45,10 @@ namespace UnityEngine.Rendering.Universal
             internal Matrix4x4[] previousViewProjectionStereo = new Matrix4x4[k_XRViewCount];
             internal Matrix4x4[] viewProjectionStereo = new Matrix4x4[k_XRViewCount];
             internal Material xrMotionVector;
+            internal bool hasValidXRDepth;
+            internal TextureHandle xrDepthSrc;
+            internal bool requiresSubsampleDepth;
+            internal LocalKeyword subsampleDepthKeyword;
         }
 
         ///  View projection data
@@ -69,7 +76,7 @@ namespace UnityEngine.Rendering.Universal
             return drawingSettings;
         }
 
-        private void InitObjectMotionRendererLists(ref PassData passData, ref CullingResults cullResults, RenderGraph renderGraph, Camera camera)
+        private void InitObjectMotionRendererLists(ref PassData passData, ref CullingResults cullResults, RenderGraph renderGraph, Camera camera, bool forceAllMotionVectorObjects)
         {
             var objectMotionDrawingSettings = GetObjectMotionDrawingSettings(camera);
 
@@ -77,7 +84,7 @@ namespace UnityEngine.Rendering.Universal
             // URP current' doesn't support this, missing motion override for transparent materials.
             var filteringSettings = new FilteringSettings(RenderQueueRange.opaque, camera.cullingMask);
             // Also render game objects that are not moved since last frame to save depth prepass requirement for camera motion.
-            filteringSettings.forceAllMotionVectorObjects = true;
+            filteringSettings.forceAllMotionVectorObjects = forceAllMotionVectorObjects;
             var renderStateBlock = new RenderStateBlock(RenderStateMask.Nothing);
 
             RenderingUtils.CreateRendererListWithRenderStateBlock(renderGraph, ref cullResults, objectMotionDrawingSettings, filteringSettings, renderStateBlock, ref passData.objMotionRendererList);
@@ -103,6 +110,9 @@ namespace UnityEngine.Rendering.Universal
 
             // Setup camera motion material
             passData.xrMotionVector = m_XRMotionVectorMaterial;
+
+            // Setup the default XR valid depth flag
+            passData.hasValidXRDepth = false;
         }
 
         /// <summary>
@@ -163,6 +173,7 @@ namespace UnityEngine.Rendering.Universal
         {
             UniversalRenderingData renderingData = frameData.Get<UniversalRenderingData>();
             UniversalCameraData cameraData = frameData.Get<UniversalCameraData>();
+            UniversalResourceData resourceData = frameData.Get<UniversalResourceData>();
 
             // XR should be enabled and single pass should be enabled.
             if (!cameraData.xr.enabled || !cameraData.xr.singlePassEnabled)
@@ -193,8 +204,14 @@ namespace UnityEngine.Rendering.Universal
                 builder.SetRenderAttachment(xrMotionVectorColor, 0, AccessFlags.Write);
                 builder.SetRenderAttachmentDepth(xrMotionVectorDepth, AccessFlags.Write);
 
+                // Logic to detect if we already has valid XR depth data in the eye texture depth attachment
+                bool hasValidXRDepth = cameraData.xr.copyDepth;
+
+                // In case we don't have valid depth, setup the renderer list to draw both static objects and moving objects to populate color+depth at the same time.
+                bool forceAllMotionVectorObjects = !hasValidXRDepth;
+
                 // Setup RendererList
-                InitObjectMotionRendererLists(ref passData, ref renderingData.cullResults, renderGraph, cameraData.camera);
+                InitObjectMotionRendererLists(ref passData, ref renderingData.cullResults, renderGraph, cameraData.camera, forceAllMotionVectorObjects);
                 builder.UseRendererList(passData.objMotionRendererList);
 
                 // Allow setting up global matrix array
@@ -202,17 +219,51 @@ namespace UnityEngine.Rendering.Universal
                 // Setup rest of the passData
                 InitPassData(ref passData, cameraData);
 
+                // Setup the relevant passData fields
+                if (hasValidXRDepth)
+                {
+                    // backBufferDepth(eyeTexture depth) has valid data to read from
+                    builder.UseTexture(resourceData.backBufferDepth, AccessFlags.Read);
+                    passData.xrDepthSrc = resourceData.backBufferDepth;
+                    passData.hasValidXRDepth = true;
+
+                    // Subsample Depth if the motion vector render target is smaller than the color render target
+                    bool subsampleDepth = cameraData.xr.motionVectorRenderTargetDesc.width < cameraData.xr.renderTargetDesc.width;
+                    passData.requiresSubsampleDepth = subsampleDepth;
+                }
+
                 builder.SetRenderFunc((PassData data, RasterGraphContext context) =>
                 {
                     // Setup camera stereo buffer
                     context.cmd.SetGlobalMatrixArray(ShaderPropertyId.previousViewProjectionNoJitterStereo, data.previousViewProjectionStereo);
                     context.cmd.SetGlobalMatrixArray(ShaderPropertyId.viewProjectionNoJitterStereo, data.viewProjectionStereo);
 
+                    // If we have valid depth data, copy the data to the motionvector depth to avoid rasterizing the static objects
+                    if (data.hasValidXRDepth)
+                    {
+                        context.cmd.SetGlobalTexture(k_XRDepthTextureNameID, data.xrDepthSrc, RenderTextureSubElement.Depth);
+
+                        if (data.requiresSubsampleDepth)
+                        {
+                            data.xrMotionVector.EnableKeyword(data.subsampleDepthKeyword);
+                        }
+                        else
+                        {
+                            data.xrMotionVector.DisableKeyword(data.subsampleDepthKeyword);
+                        }
+
+                        context.cmd.DrawProcedural(Matrix4x4.identity, data.xrMotionVector, shaderPass: 1, MeshTopology.Triangles, 3, 1);
+                    }
+                        
                     // Object Motion for both static and dynamic objects, fill stencil for mv filled pixels.
                     context.cmd.DrawRendererList(passData.objMotionRendererList);
 
-                    // Fill mv texturew with camera motion for pixels that don't have mv stencil bit. 
-                    context.cmd.DrawProcedural(Matrix4x4.identity, data.xrMotionVector, 0, MeshTopology.Triangles, 3, 1);
+                    if (!data.hasValidXRDepth)
+                    {
+                        // Fill mv texture with camera motion for pixels that don't have mv stencil bit.
+                        context.cmd.DrawProcedural(Matrix4x4.identity, data.xrMotionVector, shaderPass: 0,
+                            MeshTopology.Triangles, 3, 1);
+                    }
                 });
             }
         }
