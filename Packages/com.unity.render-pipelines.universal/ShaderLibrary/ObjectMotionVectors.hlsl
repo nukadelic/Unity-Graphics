@@ -87,7 +87,7 @@ Varyings vert(Attributes input)
 
     output.previousPositionCSNoJitter = mul(_PrevViewProjMatrix, mul(UNITY_PREV_MATRIX_M, prevPos));
 
-#if !defined(APLICATION_SPACE_WARP_MOTION)
+#if !defined(APPLICATION_SPACE_WARP_MOTION)
     ApplyMotionVectorZBias(output.positionCS);
 #endif
 
@@ -109,7 +109,7 @@ float4 frag(Varyings input) : SV_Target
         LODFadeCrossFade(input.positionCS);
     #endif
 
-    #if defined(APLICATION_SPACE_WARP_MOTION)
+    #if defined(APPLICATION_SPACE_WARP_MOTION)
         return float4(CalcAswNdcMotionVectorFromCsPositions(input.positionCSNoJitter, input.previousPositionCSNoJitter), 1);
     #else
         return float4(CalcNdcMotionVectorFromCsPositions(input.positionCSNoJitter, input.previousPositionCSNoJitter), 0, 0);

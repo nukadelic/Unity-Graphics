@@ -10,9 +10,10 @@ namespace UnityEngine.Rendering.Universal
     /// </summary>
     public class XRDepthMotionPass : ScriptableRenderPass
     {
-        private static readonly ShaderTagId k_MotionOnlyShaderTagId = new ShaderTagId("XRMotionVectors");
+        private static readonly ShaderTagId k_MotionOnlyShaderTagId = new ShaderTagId("MotionVectors");
         private static readonly int k_XRDepthTextureNameID = Shader.PropertyToID("_XRDepthTexture");
         private static LocalKeyword m_SubsampleDepthKeyword;
+        private static GlobalKeyword m_ApplicationSpaceWarpMotionKeyword;
         private PassData m_PassData;
         private RTHandle m_XRMotionVectorColor;
         private TextureHandle xrMotionVectorColor;
@@ -37,6 +38,7 @@ namespace UnityEngine.Rendering.Universal
             xrMotionVectorDepth = TextureHandle.nullHandle;
             m_XRMotionVectorDepth = null;
             m_SubsampleDepthKeyword = new LocalKeyword(xrMotionVector, "_SUBSAMPLE_DEPTH");
+            m_ApplicationSpaceWarpMotionKeyword = GlobalKeyword.Create("APPLICATION_SPACE_WARP_MOTION");
         }
 
         private class PassData
@@ -72,7 +74,7 @@ namespace UnityEngine.Rendering.Universal
                 enableInstancing = true,
             };
             drawingSettings.SetShaderPassName(0, k_MotionOnlyShaderTagId);
-            
+
             return drawingSettings;
         }
 
@@ -254,9 +256,11 @@ namespace UnityEngine.Rendering.Universal
 
                         context.cmd.DrawProcedural(Matrix4x4.identity, data.xrMotionVector, shaderPass: 1, MeshTopology.Triangles, 3, 1);
                     }
-                        
+
                     // Object Motion for both static and dynamic objects, fill stencil for mv filled pixels.
+                    context.cmd.SetKeyword(m_ApplicationSpaceWarpMotionKeyword, true);
                     context.cmd.DrawRendererList(passData.objMotionRendererList);
+                    context.cmd.SetKeyword(m_ApplicationSpaceWarpMotionKeyword, false);
 
                     if (!data.hasValidXRDepth)
                     {

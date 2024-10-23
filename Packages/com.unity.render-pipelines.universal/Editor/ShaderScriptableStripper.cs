@@ -121,7 +121,7 @@ namespace UnityEditor.Rendering.Universal
         public static readonly string kPassNameGBuffer = "GBuffer";
         public static readonly string kPassNameForwardLit = "ForwardLit";
         public static readonly string kPassNameDepthNormals = "DepthNormals";
-        public static readonly string kPassNameXRMotionVectors = "XRMotionVectors";
+        public static readonly string kPassNameMotionVectors = "MotionVectors";
 
         // Keywords
         LocalKeyword m_MainLightShadows;
@@ -180,6 +180,7 @@ namespace UnityEditor.Rendering.Universal
         LocalKeyword m_Gamma20AndHDRInput;
         LocalKeyword m_SHPerVertex;
         LocalKeyword m_SHMixed;
+        LocalKeyword m_ApplicationSpaceWarpMotion;
 
         private LocalKeyword TryGetLocalKeyword(Shader shader, string name)
         {
@@ -247,6 +248,10 @@ namespace UnityEditor.Rendering.Universal
             m_FilmGrain = TryGetLocalKeyword(shader, ShaderKeywordStrings.FilmGrain);
             m_SHPerVertex = TryGetLocalKeyword(shader, ShaderKeywordStrings.EVALUATE_SH_VERTEX);
             m_SHMixed = TryGetLocalKeyword(shader, ShaderKeywordStrings.EVALUATE_SH_MIXED);
+
+            // XR Specific Keywords
+            m_ApplicationSpaceWarpMotion =
+                TryGetLocalKeyword(shader, ShaderKeywordStrings.APPLICATION_SPACE_WARP_MOTION);
         }
 
 
@@ -728,7 +733,7 @@ namespace UnityEditor.Rendering.Universal
 
             return strippingData.stripUnusedXRVariants;
         }
-        
+
 
         internal bool StripUnusedFeatures(ref IShaderScriptableStrippingData strippingData)
         {
@@ -929,6 +934,16 @@ namespace UnityEditor.Rendering.Universal
             return false;
         }
 
+        internal bool StripInvalidVariants_MotionVectors(ref IShaderScriptableStrippingData strippingData)
+        {
+            if (strippingData.IsKeywordEnabled(m_ApplicationSpaceWarpMotion))
+            {
+                return strippingData.stripUnusedXRVariants;
+            }
+
+            return false;
+        }
+
         internal bool StripInvalidVariants(ref IShaderScriptableStrippingData strippingData)
         {
             if (StripInvalidVariants_HDR(ref strippingData))
@@ -938,6 +953,9 @@ namespace UnityEditor.Rendering.Universal
                 return true;
 
             if (StripInvalidVariants_Shadows(ref strippingData))
+                return true;
+
+            if (StripInvalidVariants_MotionVectors(ref strippingData))
                 return true;
 
             return false;
@@ -1005,14 +1023,6 @@ namespace UnityEditor.Rendering.Universal
             return false;
         }
 
-        internal bool StripUnusedPass_XRMotionVectors(ref IShaderScriptableStrippingData strippingData)
-        {
-            // Strip XR MotionVector Passes if there is no XR
-            if (strippingData.passName == kPassNameXRMotionVectors && strippingData.stripUnusedXRVariants)
-                return true;
-            return false;
-        }        
-
         internal bool StripUnusedPass(ref IShaderScriptableStrippingData strippingData)
         {
             if (StripUnusedPass_2D(ref strippingData))
@@ -1025,9 +1035,6 @@ namespace UnityEditor.Rendering.Universal
                 return true;
 
             if (StripUnusedPass_Decals(ref strippingData))
-                return true;
-
-            if (StripUnusedPass_XRMotionVectors(ref strippingData))
                 return true;
 
             return false;
