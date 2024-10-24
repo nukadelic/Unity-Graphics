@@ -1491,6 +1491,13 @@ namespace UnityEngine.Rendering.Universal
                         m_XRCopyDepthPass.CopyToDepthXR = true;
                         EnqueuePass(m_XRCopyDepthPass);
                     }
+
+                    if (cameraData.xr.hasMotionVectorPass && m_XRDepthMotionPass != null)
+                    {
+                        m_XRDepthMotionPass.Update(ref cameraData);
+                        m_XRDepthMotionPass.Setup(in cameraData, m_ActiveCameraColorAttachment);
+                        EnqueuePass(m_XRDepthMotionPass);
+                    }
                 }
 #endif
             }
