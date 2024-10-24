@@ -429,10 +429,7 @@ half4 UniversalFragmentPBR_DebugForwardPlus(InputData inputData, SurfaceData sur
         if (IsMatchingLightLayer(light.layerMask, meshRenderingLayers))
 #endif
         {
-            if (light.distanceAttenuation > 0.0f)
-            {
-                totalLightCount++;
-            }
+            totalLightCount++;
         }
     LIGHT_LOOP_END
     #endif
