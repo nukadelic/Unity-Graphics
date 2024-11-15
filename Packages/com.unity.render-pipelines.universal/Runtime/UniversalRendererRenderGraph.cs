@@ -297,10 +297,19 @@ namespace UnityEngine.Rendering.Universal
 
             useDepthPriming = IsDepthPrimingEnabled(cameraData);
 
-            // Intermediate texture has different yflip state than backbuffer. In case we use intermediate texture, we must use both color and depth together.
-            bool intermediateRenderTexture = (requireColorTexture || requireDepthTexture);
-            createDepthTexture = intermediateRenderTexture;
-            createColorTexture = intermediateRenderTexture;
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan)
+            {
+                // With vulkan subpass, we expect no "yFlip" is needed, so we don't need color and depth to be the same
+                createDepthTexture = requireDepthTexture;
+                createColorTexture = requireColorTexture;
+            }
+            else
+            {
+                // Intermediate texture has different yflip state than backbuffer. In case we use intermediate texture, we must use both color and depth together.
+                bool intermediateRenderTexture = (requireColorTexture || requireDepthTexture);
+                createDepthTexture = intermediateRenderTexture;
+                createColorTexture = intermediateRenderTexture;
+            }
         }
 
         // Gather history render requests and manage camera history texture life-time.
@@ -1474,7 +1483,6 @@ namespace UnityEngine.Rendering.Universal
 
             bool resolvePostProcessingToCameraTarget = !hasCaptureActions && !hasPassesAfterPostProcessing && !applyFinalPostProcessing;
             bool needsColorEncoding = DebugHandler == null || !DebugHandler.HDRDebugViewIsActive(cameraData.resolveFinalTarget);
-            bool xrDepthTargetResolved = resourceData.activeDepthID == UniversalResourceData.ActiveID.BackBuffer;
 
             DebugHandler debugHandler = ScriptableRenderPass.GetActiveDebugHandler(cameraData);
             bool resolveToDebugScreen = debugHandler != null && debugHandler.WriteToDebugScreenTexture(cameraData.resolveFinalTarget);
@@ -1628,6 +1636,8 @@ namespace UnityEngine.Rendering.Universal
 #if ENABLE_VR && ENABLE_XR_MODULE
             if (cameraData.xr.enabled)
             {
+                // resolve might happens in post processing pass
+                bool xrDepthTargetResolved = resourceData.activeDepthID == UniversalResourceData.ActiveID.BackBuffer;
                 // Populate XR depth as requested by XR provider.
                 if (!xrDepthTargetResolved && cameraData.xr.copyDepth)
                 {
