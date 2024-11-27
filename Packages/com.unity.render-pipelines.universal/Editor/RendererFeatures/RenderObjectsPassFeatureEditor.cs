@@ -284,7 +284,7 @@ namespace UnityEditor.Experimental.Rendering.Universal
                 rect.y += Styles.defaultLineSpace;
                 EditorGUI.PropertyField(rect, m_DepthInput, Styles.depthInput);
                 if (m_DepthInput.boolValue && m_WriteDepth.boolValue) {
-                    Debug.LogWarning("Depth Input and Write Depth can't be used at the same time. Uncheck Write Depth.");
+                    Debug.LogWarning("Depth Input and Write Depth can't be used at the same time. Write Depth has been disabled.");
                     m_WriteDepth.boolValue = false;
                 }
                 

@@ -297,7 +297,7 @@ namespace UnityEngine.Rendering.Universal
 
             useDepthPriming = IsDepthPrimingEnabled(cameraData);
 
-            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan)
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan && renderGraph.nativeRenderPassesEnabled)
             {
                 // With vulkan subpass, we expect no "yFlip" is needed, so we don't need color and depth to be the same
                 createDepthTexture = requireDepthTexture;
