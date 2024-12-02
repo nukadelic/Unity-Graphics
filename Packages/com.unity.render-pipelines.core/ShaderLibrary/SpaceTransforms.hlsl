@@ -46,7 +46,13 @@ float4x4 GetWorldToHClipMatrix()
 
 float4x4 GetPrevWorldToHClipMatrix()
 {
+#ifdef UNITY_MATRIX_PREV_VP
+    // When using Built-In Shims with ShaderGraph,
+    // UNITY_MATRIX_PREV_VP will not be defined.
     return UNITY_MATRIX_PREV_VP;
+#else
+    return UNITY_MATRIX_VP;
+#endif
 }
 
 // Transform to homogenous clip space
