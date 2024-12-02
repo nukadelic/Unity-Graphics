@@ -14,7 +14,7 @@ Shader "Hidden/Universal Render Pipeline/CameraMotionVectors"
             #pragma multi_compile_fragment _ _SUBSAMPLE_DEPTH
             #pragma never_use_dxc metal
 
-            #pragma exclude_renderers d3d11_9x
+            #pragma exclude_renderers d3d11_9x gles gles3
             #pragma target 3.5
 
             #pragma vertex vert
