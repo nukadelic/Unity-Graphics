@@ -49,6 +49,7 @@ float4 _Time, _SinTime, _CosTime, unity_DeltaTime;
     #define unity_MatrixV unity_StereoMatrixV[unity_StereoEyeIndex]
     #define unity_MatrixInvV unity_StereoMatrixInvV[unity_StereoEyeIndex]
     #define unity_MatrixVP unity_StereoMatrixVP[unity_StereoEyeIndex]
+    #define unity_MatrixPrevVP unity_StereoMatrixPrevVP[unity_StereoEyeIndex]
 
     #define unity_CameraProjection unity_StereoCameraProjection[unity_StereoEyeIndex]
     #define unity_CameraInvProjection unity_StereoCameraInvProjection[unity_StereoEyeIndex]
@@ -60,6 +61,7 @@ float4 _Time, _SinTime, _CosTime, unity_DeltaTime;
         float4x4 unity_MatrixV;
         float4x4 unity_MatrixInvV;
         float4x4 unity_MatrixVP;
+        float4x4 unity_MatrixPrevVP;
         float4x4 unity_ObjectToWorld;
         float4 unity_StereoScaleOffset;
     #endif
