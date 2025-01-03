@@ -1591,7 +1591,7 @@ namespace UnityEngine.Rendering.Universal
                     bool isRenderToBackBufferTarget = !data.cameraData.isSceneViewCamera;
 #if ENABLE_VR && ENABLE_XR_MODULE
                     if (data.cameraData.xr.enabled)
-                        isRenderToBackBufferTarget = destinationTextureHdl == data.cameraData.xr.renderTarget;
+                        isRenderToBackBufferTarget = data.cameraData.xr.IsXRTarget(destinationTextureHdl);
 #endif
                     // HDR debug views force-renders to DebugScreenTexture.
                     isRenderToBackBufferTarget &= !resolveToDebugScreen;

@@ -1441,6 +1441,9 @@ namespace UnityEngine.Rendering.Universal
 
         /// <summary> Keyword used for enable alpha output. Used in post processing. </summary>
         public const string _ENABLE_ALPHA_OUTPUT = "_ENABLE_ALPHA_OUTPUT";
+
+        /// <summary> Keyword used for application space warp for XR devices. </summary>
+        public const string APPLICATION_SPACE_WARP_MOTION = "APPLICATION_SPACE_WARP_MOTION";
     }
 
     public sealed partial class UniversalRenderPipeline

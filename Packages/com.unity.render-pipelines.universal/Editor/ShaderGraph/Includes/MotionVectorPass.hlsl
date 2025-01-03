@@ -78,7 +78,9 @@ void vert(
     MotionVectorPassVaryings mvOutput = (MotionVectorPassVaryings)0;
     MotionVectorPassOutput currentFrameMvData = (MotionVectorPassOutput)0;
     output = BuildVaryings(input, currentFrameMvData);
+#if !defined(APPLICATION_SPACE_WARP_MOTION)
     ApplyMotionVectorZBias(output.positionCS);
+#endif
     packedOutput = PackVaryings(output);
 
 #if defined(HAVE_VFX_MODIFICATION) && !VFX_FEATURE_MOTION_VECTORS
@@ -176,6 +178,10 @@ float4 frag(
     LODFadeCrossFade(input.positionCS);
 #endif
 
+#if defined(APPLICATION_SPACE_WARP_MOTION)
+    return float4(CalcAswNdcMotionVectorFromCsPositions(mvInput.positionCSNoJitter, mvInput.previousPositionCSNoJitter), 1);
+#else
     return float4(CalcNdcMotionVectorFromCsPositions(mvInput.positionCSNoJitter, mvInput.previousPositionCSNoJitter), 0, 0);
+#endif
 }
 #endif
