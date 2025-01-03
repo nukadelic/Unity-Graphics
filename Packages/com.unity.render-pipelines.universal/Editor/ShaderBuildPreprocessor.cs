@@ -70,7 +70,7 @@ namespace UnityEditor.Rendering.Universal
         SoftShadowsMedium = (1L << 47),
         SoftShadowsHigh = (1L << 48),
         AlphaOutput = (1L << 49),
-
+        ReflectionProbeAtlas = (1L << 50),
     }
 
     [Flags]
@@ -211,6 +211,7 @@ namespace UnityEditor.Rendering.Universal
             public bool needsRenderPass;
             public bool needsReflectionProbeBlending;
             public bool needsReflectionProbeBoxProjection;
+            public bool needsReflectionProbeAtlas;
             public bool needsSHVertexForSHAuto;
             public RenderingMode renderingMode;
         }
@@ -571,6 +572,7 @@ namespace UnityEditor.Rendering.Universal
             rsd.needsRenderPass                   = (rsd.isUniversalRenderer && rsd.renderingMode == RenderingMode.Deferred);
             rsd.needsReflectionProbeBlending      = urpAsset.reflectionProbeBlending;
             rsd.needsReflectionProbeBoxProjection = urpAsset.reflectionProbeBoxProjection;
+            rsd.needsReflectionProbeAtlas         = urpAsset.reflectionProbeAtlas;
             rsd.needsProcedural                   = NeedsProceduralKeyword(ref rsd);
             rsd.needsSHVertexForSHAuto            = s_UseSHPerVertexForSHAuto;
 
@@ -670,6 +672,10 @@ namespace UnityEditor.Rendering.Universal
             // Reflection Probe Box Projection
             if (rendererRequirements.needsReflectionProbeBoxProjection)
                 shaderFeatures |= ShaderFeatures.ReflectionProbeBoxProjection;
+
+            // Reflection Probe Atlas
+            if (rendererRequirements.needsReflectionProbeAtlas)
+                shaderFeatures |= ShaderFeatures.ReflectionProbeAtlas;
 
             if (rendererRequirements.needsSHVertexForSHAuto)
                 shaderFeatures |= ShaderFeatures.AutoSHModePerVertex;

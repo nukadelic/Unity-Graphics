@@ -132,6 +132,7 @@ namespace UnityEditor.Rendering.Universal
         LocalKeyword m_AdditionalLightShadows;
         LocalKeyword m_ReflectionProbeBlending;
         LocalKeyword m_ReflectionProbeBoxProjection;
+        LocalKeyword m_ReflectionProbeAtlas;
         LocalKeyword m_CastingPunctualLightShadow;
         LocalKeyword m_SoftShadows;
         LocalKeyword m_SoftShadowsLow;
@@ -196,6 +197,7 @@ namespace UnityEditor.Rendering.Universal
             m_AdditionalLightShadows = TryGetLocalKeyword(shader, ShaderKeywordStrings.AdditionalLightShadows);
             m_ReflectionProbeBlending = TryGetLocalKeyword(shader, ShaderKeywordStrings.ReflectionProbeBlending);
             m_ReflectionProbeBoxProjection = TryGetLocalKeyword(shader, ShaderKeywordStrings.ReflectionProbeBoxProjection);
+            m_ReflectionProbeAtlas = TryGetLocalKeyword(shader, ShaderKeywordStrings.ReflectionProbeAtlas);
             m_CastingPunctualLightShadow = TryGetLocalKeyword(shader, ShaderKeywordStrings.CastingPunctualLightShadow);
             m_SoftShadows = TryGetLocalKeyword(shader, ShaderKeywordStrings.SoftShadows);
             m_SoftShadowsLow = TryGetLocalKeyword(shader, ShaderKeywordStrings.SoftShadowsLow);
@@ -519,6 +521,9 @@ namespace UnityEditor.Rendering.Universal
                 return true;
 
             if (stripTool.StripMultiCompile(m_ReflectionProbeBoxProjection, ShaderFeatures.ReflectionProbeBoxProjection))
+                return true;
+
+            if (stripTool.StripMultiCompile(m_ReflectionProbeAtlas, ShaderFeatures.ReflectionProbeAtlas))
                 return true;
 
             return false;
